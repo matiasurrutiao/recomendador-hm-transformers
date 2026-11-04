@@ -1,0 +1,35 @@
+{
+  "parametros": {
+    "desde": "2020-03-23",
+    "pct_clientes": 10,
+    "k": 5,
+    "min_dias": 2
+  },
+  "filas_originales": 31788324,
+  "tras_filtro_fecha_y_muestra": 817642,
+  "duplicados_mismo_dia": 80115,
+  "iteraciones_kcore": 6,
+  "pct_usuarios_prueba_y_validacion_mismo_dia": 0.7018635257686353,
+  "interacciones": 579226,
+  "usuarios": 36168,
+  "items": 17801,
+  "densidad": 0.0008996615374219847,
+  "largo_secuencia": {
+    "media": 16.01487502764875,
+    "mediana": 12.0,
+    "p90": 31.0,
+    "max": 338
+  },
+  "pct_pasos_mismo_dia": 0.696731500312486,
+  "periodo": [
+    "2020-03-23",
+    "2020-09-22"
+  ],
+  "cumple_minimos": {
+    "interacciones>=50000": true,
+    "usuarios>=2000": true,
+    "items>=500": true
+  },
+  "items_sin_atributos": 0,
+  "segundos": 49.4
+}

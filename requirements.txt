@@ -1,0 +1,9 @@
+pandas>=2.0
+pyarrow
+numpy
+scipy
+matplotlib
+jinja2
+mlxtend>=0.23
+scikit-learn
+torch>=2.0

@@ -1,0 +1,4 @@
+data/raw/
+data/log_preparacion.txt
+__pycache__/
+.ipynb_checkpoints/
