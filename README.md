@@ -32,9 +32,9 @@ notebooks/
   entrega1_recomendador_hm.ipynb       notebook ejecutado con todas sus salidas
 data/
   secuencias.parquet                   una fila por clienta: lista de prendas y fechas (índices desde 1, 0 = relleno)
+                                       sin identificadores de clientas: solo user_idx (1..36.168)
   mapa_items.csv                       item_idx → article_id, nombre, tipo, color, departamento, línea, precio
   interacciones.parquet                una fila por (clienta, prenda, fecha)
-  mapa_usuarios.csv                    user_idx → customer_id
   resumen_preparacion.json             números de la limpieza
   metricas.csv                         métricas de todos los modelos en validación y prueba
   hm.txt                               mismas secuencias en el formato de SASRec.pytorch ("usuario ítem")

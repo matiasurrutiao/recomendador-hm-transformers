@@ -7,11 +7,11 @@ muestra fija de clientes, limpia, aplica 5-core y genera:
   data/interacciones.parquet  una fila por (usuario, ítem, fecha), ordenada
   data/secuencias.parquet     una fila por usuario: lista de ítems y fechas
   data/mapa_items.csv         item_idx -> article_id + atributos del producto
-  data/mapa_usuarios.csv      user_idx -> customer_id
   data/hm.txt                 formato SASRec.pytorch: "user item" por línea
   data/resumen_preparacion.json
 
 Índices desde 1 (0 = relleno), como pide el enunciado y como espera SASRec.
+El customer_id solo se usa en memoria para muestrear y agrupar; ningún archivo de salida lo contiene.
 
 Uso:
   python scripts/preparar_hm.py --desde 2020-03-23 --pct_clientes 10
@@ -155,8 +155,7 @@ def main():
     mi = (pd.DataFrame({"item_idx": mapa_item.values, "article_id": mapa_item.index})
           .merge(art, on="article_id", how="left").merge(precio, on="article_id", how="left"))
     mi.to_csv(OUT / "mapa_items.csv", index=False)
-    pd.DataFrame({"user_idx": np.arange(1, nu + 1), "customer_id": usuarios}).to_csv(
-        OUT / "mapa_usuarios.csv", index=False)
+    # Sin identificadores de clientas en las salidas: solo se guarda user_idx (1..N), nunca el customer_id.
     res["items_sin_atributos"] = int(mi.product_type_name.isna().sum())
     res["segundos"] = round(time.time() - t0, 1)
 

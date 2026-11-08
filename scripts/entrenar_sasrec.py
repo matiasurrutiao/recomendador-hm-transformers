@@ -108,6 +108,15 @@ pop = np.asarray(X_train.sum(0)).ravel().astype(np.float32)   # compras por pren
 desempate = 1e-6 * pop / pop.max()                            # desempate por popularidad para todos los modelos
 COLS = [f"HR@{k}" for k in KS] + [f"NDCG@{k}" for k in KS] + ["MRR", "Cobertura@10"]
 
+# Prueba de `evaluar` con un caso conocido: puntaje = -índice, así la prenda 1 es la favorita
+_juguete = lambda H: np.tile(-np.arange(N_ITEMS + 1, dtype=np.float32), (len(H), 1))
+_, _r = evaluar(_juguete, [np.array([1]), np.array([2])], np.array([3, 1]))
+# clienta 1 ya compró la 1 (se excluye) → la 3 queda 2.ª; clienta 2 compró la 2 → la 1 queda 1.ª
+print("Prueba de evaluar: rangos", _r.tolist(), "(esperado [2.0, 1.0])")
+assert _r.tolist() == [2.0, 1.0]
+print(f"Matriz de entrenamiento: {X_train.nnz:,} pares clienta–prenda · prendas con compras: {(pop > 0).sum():,}")
+
+
 # ---- celda 26 ----
 class AtencionCausal(nn.Module):
     def __init__(self, d, cabezas, dropout):
@@ -130,6 +139,17 @@ class AtencionCausal(nn.Module):
         salida = (self.drop(pesos) @ v).transpose(1, 2).reshape(B, L, D)
         return self.o(salida), pesos
 
+# Verificación: con la máscara causal nadie mira el futuro y nadie mira el relleno
+_att = AtencionCausal(d=8, cabezas=2, dropout=0.0)
+_x = torch.randn(1, 5, 8)
+_rell = torch.tensor([[True, False, False, False, False]])      # posición 0 = relleno
+_, _w = _att(_x, _rell)
+print("Pesos de atención de la cabeza 1 (fila = posición que mira, columna = posición mirada):")
+print(_w[0, 0].detach().numpy().round(2))
+assert torch.all(torch.triu(_w[0], diagonal=1) == 0) and torch.all(_w[0, :, :, 0] == 0)
+print("OK: triángulo superior en 0 (no mira el futuro), columna del relleno en 0 y cada fila real suma 1")
+
+
 # ---- celda 28 ----
 class BloqueTransformer(nn.Module):
     def __init__(self, d, cabezas, dropout):
@@ -144,6 +164,11 @@ class BloqueTransformer(nn.Module):
         x = x + self.drop(a)                        # residual 1
         x = x + self.drop(self.ff(self.norm2(x)))   # residual 2
         return x, pesos
+
+_bloque = BloqueTransformer(d=8, cabezas=2, dropout=0.0)
+_y, _w = _bloque(_x, _rell)
+print(f"Bloque: entrada {tuple(_x.shape)} → salida {tuple(_y.shape)} (misma forma, por eso se pueden apilar) · pesos {tuple(_w.shape)} = (lote, cabezas, L, L)")
+
 
 # ---- celda 30 ----
 class SASRec(nn.Module):
@@ -180,6 +205,14 @@ def lote(seqs, maxlen=MAXLEN):
     for i, s in enumerate(seqs):
         s = s[-maxlen:]; X[i, maxlen - len(s):] = s               # relleno a la izquierda
     return torch.from_numpy(X)
+
+_m = SASRec(N_ITEMS, d=64, bloques=1, cabezas=1, maxlen=MAXLEN)
+_s = lote(train[:3]); _h, _ = _m(_s)
+print(f"SASRec de prueba (1 bloque, d = 64): {sum(p.numel() for p in _m.parameters()):,} parámetros, "
+      f"{_m.item.weight.numel():,} de ellos en el embedding de prendas")
+print(f"3 historiales {tuple(_s.shape)} → vectores {tuple(_h.shape)} → puntajes {tuple(_m.puntajes(_s).shape)} (una columna por prenda + relleno)")
+print("Últimas 8 posiciones del primer historial (relleno = 0 a la izquierda):", _s[0, -8:].tolist())
+
 
 # ---- celda 32 ----
 def epoca(modelo, opt, perdida, batch):
@@ -263,6 +296,10 @@ def entrenar_sasrec(clave, cfg, max_epocas=30, paciencia=3):
     json.dump(HIST, open(RUTA_HIST, "w"), indent=1)
     modelo.load_state_dict(torch.load(ruta, map_location="cpu")["estado"])
     return modelo.eval()
+
+print("Funciones de entrenamiento listas. Configuraciones ya entrenadas en", RUTA_HIST.name + ":",
+      ", ".join(k for k, v in HIST.items() if v.get("terminado")) or "ninguna")
+
 
 # ---- celda 34 ----
 CONFIGS = {
