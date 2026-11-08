@@ -1,0 +1,10 @@
+# Dependencias del dashboard (Streamlit Community Cloud usa este archivo por estar junto a src/app.py).
+# PyTorch solo CPU: la app nunca entrena y así la instalación pesa ~200 MB en vez de varios GB.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.5
+streamlit>=1.40
+google-genai>=3.0,<4
+pandas>=2.0
+pyarrow
+numpy
+scipy

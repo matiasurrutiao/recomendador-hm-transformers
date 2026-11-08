@@ -2,3 +2,7 @@ data/raw/
 data/log_preparacion.txt
 __pycache__/
 .ipynb_checkpoints/
+# Secretos: la clave de la API va en .streamlit/secrets.toml (local) o en Secrets de Streamlit Cloud
+.streamlit/secrets.toml
+secrets.toml
+.env
