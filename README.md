@@ -54,15 +54,15 @@ La nube usa `src/requirements.txt`, que instala PyTorch solo para CPU.
 | Prueba (36.168 clientas) | HR@10 | NDCG@10 | MRR | Cobertura@10 | Listas con colores repetidos | Prendas distintas en el top 10 | Novedad (bits) |
 |---|---|---|---|---|---|---|---|
 | SASRec | 8,95 % | 0,057 | 0,052 | 67,8 % | 72 % | 8,3 | 9,2 |
-| Ítem–ítem coseno | 8,72 % | 0,060 | 0,055 | 91,4 % | 49 % | 8,9 | 11,5 |
+| Ítem–ítem coseno | 8,73 % | 0,060 | 0,055 | 91,4 % | 49 % | 8,9 | 11,5 |
 | Fusión sin diversidad (referencia) | 11,26 % | 0,072 | 0,064 | 91,5 % | 69 % | 8,2 | 10,0 |
-| **Híbrido (innovación)** | **9,62 %** | **0,065** | **0,059** | **92,9 %** | **0 %** | **10,0** | 10,2 |
+| **Híbrido (innovación)** | **9,63 %** | **0,065** | **0,059** | **92,8 %** | **0 %** | **10,0** | 10,2 |
 
 El híbrido supera a SASRec y a ítem–ítem a la vez en HR@10, NDCG@10, MRR y cobertura, y elimina las listas con colores repetidos. La fusión sin diversidad acierta más, pero repite colores en 7 de cada 10 listas: esa diferencia es el costo medido de la diversidad. El dashboard muestra siempre la pestaña de **SASRec puro** al lado del híbrido.
 
 ## Analista con IA
 
-- **Modelo:** Gemini 3.8 Flash por el plan gratuito de Google AI Studio. Si se agota la cuota pasa solo a Gemini 3.5 Flash-Lite. Razonamiento en nivel bajo y temperatura 0,3.
+- **Modelo:** Gemini 3.5 Flash-Lite por el plan gratuito de Google AI Studio (responde en ~1 s). Si se agota la cuota o no responde, pasa solo a Gemini 3.1 Flash-Lite. Gemini 3.8 Flash se descartó porque en el plan gratuito tardaba más de 30 s. Razonamiento en nivel bajo y temperatura 0,3.
 - **Contexto estructurado (JSON):**
   - el historial con sus pesos de atención;
   - la lista del modelo con puntaje, popularidad y el "por qué" que da el propio modelo;
@@ -78,13 +78,13 @@ El híbrido supera a SASRec y a ítem–ítem a la vez en HR@10, NDCG@10, MRR y 
   - listas numeradas en otro orden que el del modelo.
 
   Se probó sin falsos positivos en 146 contextos reales.
-- **Cinco pruebas de honestidad** documentadas en el notebook 2 (más una extra de arranque en frío):
+- **Cinco pruebas de honestidad** documentadas en el notebook 2, más una extra de arranque en frío. **Aprobó las 6**, y la revisión manual encontró una sola imprecisión menor (exagera un peso de atención):
   1. Análisis inicial.
   2. Pedido de reordenar.
   3. Prenda que no está.
   4. Pregunta sin datos.
   5. Otra recomendación vía herramienta.
-- **Costo y latencia:** cada llamada registra tokens de entrada, salida y razonamiento, latencia y costo. El costo real es US$ 0 en el plan gratuito; también se informa lo que costaría con la tarifa pagada. La app tiene un tope de 20 llamadas por sesión. En el plan gratuito Google puede usar el contenido para mejorar sus productos, y por eso el contexto no lleva datos personales.
+- **Costo y latencia:** cada llamada registra tokens de entrada, salida y razonamiento, latencia y costo. El costo real es US$ 0 en el plan gratuito; también se informa lo que costaría con la tarifa pagada. Resultado de las pruebas: ~2 s por respuesta y, con la tarifa pagada, ≈ US$ 0,0025 por análisis inicial (≈ US$ 2,4 por 1.000). La app tiene un tope de 20 llamadas por sesión. En el plan gratuito Google puede usar el contenido para mejorar sus productos, y por eso el contexto no lleva datos personales.
 
 ## Cómo ejecutar los notebooks (CPU)
 

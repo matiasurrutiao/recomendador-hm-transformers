@@ -17,14 +17,13 @@ from pathlib import Path
 
 import numpy as np
 
-MODELO_LLM = "gemini-3.8-flash"            # plan gratuito de Google AI Studio
-MODELO_RESPALDO = "gemini-3.5-flash-lite"   # si se agota la cuota gratuita del principal (error 429)
+MODELO_LLM = "gemini-3.5-flash-lite"      # plan gratuito de Google AI Studio; rápido (≈1 s) para una demo en vivo
+MODELO_RESPALDO = "gemini-3.1-flash-lite"   # si se agota la cuota gratuita o el principal no responde
 PRECIOS_USD_MTOK = {                      # tarifa pagada publicada (entrada, salida) por millón de tokens; gratis = 0
+    "gemini-3.5-flash-lite": (0.30, 2.50),
+    "gemini-3.1-flash-lite": (0.25, 1.50),
     "gemini-3.8-flash": (0.75, 3.75),
     "gemini-3.6-flash": (0.75, 3.75),
-    "gemini-3.5-flash-lite": (0.30, 2.50),
-    "gemini-2.5-flash": (0.30, 2.50),
-    "gemini-2.5-flash-lite": (0.10, 0.40),
 }
 MAX_TOKENS_ANALISIS, MAX_TOKENS_CHAT, MAX_RONDAS_HERRAMIENTA = 4000, 3000, 2   # incluye tokens de razonamiento
 RUTA_PROMPT = Path(__file__).with_name("analista_prompt.md")
@@ -143,7 +142,7 @@ class Analista:
         from google import genai
         from google.genai import types
         self.genai, self.types = genai, types
-        self.cliente = genai.Client(api_key=api_key)
+        self.cliente = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=60_000))   # ms; evita esperas indefinidas
         self.rec, self.modelo_llm, self.plan_gratuito = rec, modelo_llm, plan_gratuito
         self.sistema = RUTA_PROMPT.read_text(encoding="utf-8")
         self.herramienta = types.Tool(function_declarations=[types.FunctionDeclaration(

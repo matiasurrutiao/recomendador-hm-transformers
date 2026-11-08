@@ -185,16 +185,16 @@ seg.style.format({c: "{:.2%}" for c in seg.columns if c != "clientas"} | {"clien
 """)
 md(r"""
 **Lectura de la prueba** (se miró una sola vez, con la variante elegida en validación):
-- **La innovación se sostiene fuera de validación.** El híbrido supera a SASRec (HR@10 9,62 % vs 8,95 %, +7 %;
-  NDCG@10 0,065 vs 0,057, +15 %) y a ítem–ítem (HR@10 +10 %, NDCG@10 +8 %), con más cobertura que ambos (92,9 %) y
+- **La innovación se sostiene fuera de validación.** El híbrido supera a SASRec (HR@10 9,63 % vs 8,95 %, +8 %;
+  NDCG@10 0,065 vs 0,057, +15 %) y a ítem–ítem (HR@10 +10 %, NDCG@10 +8 %), con más cobertura que ambos (92,8 %) y
   **ninguna lista con la misma prenda en dos colores** (SASRec: 72 %). Cada lista trae 10 prendas distintas en vez de 8,3.
 - **El costo de la diversidad es medible.** La fusión sin restricción acierta más (HR@10 11,26 %), pero repite colores en
   7 de cada 10 listas. Elegimos la diversidad porque en una vitrina de 10 lugares mostrar tres colores del mismo cardigan
   desperdicia espacio; el equipo de negocio podría preferir la otra variante, y por eso queda documentada.
 - **Por segmento**, el híbrido mejora a SASRec en completar carrito, historial corto y largo, ítem popular y cola larga. La
-  única excepción es la próxima visita (2,62 % vs 2,77 %): esa tarea es mucho más difícil para todos los modelos (≈ 3 %) y
+  única excepción es la próxima visita (2,63 % vs 2,77 %): esa tarea es mucho más difícil para todos los modelos (≈ 3 %) y
   ahí la restricción de diversidad quita aciertos que SASRec lograba recomendando otro color de lo ya comprado.
-- En **cola larga** el híbrido (5,78 %) supera a SASRec (4,61 %) gracias al aporte de ítem–ítem: la fusión corrige parte
+- En **cola larga** el híbrido (5,81 %) supera a SASRec (4,61 %) gracias al aporte de ítem–ítem: la fusión corrige parte
   del sesgo de SASRec hacia lo popular.
 """)
 
@@ -215,8 +215,9 @@ repetición de colores, sesgo a lo popular, arranque en frío), la **contrasta**
    modelo, pero la lista la produce el recomendador.
 4. **Control automático de honestidad** sobre cada respuesta (`verificar`): referencias inexistentes, nombres de prendas
    del catálogo que no estaban en el contexto y listas numeradas en otro orden que el del modelo.
-5. **Modelo y topes**: Gemini 3.8 Flash por el **plan gratuito** de Google AI Studio (respaldo automático a Gemini 3.5
-   Flash-Lite si se agota la cuota), razonamiento en nivel bajo, temperatura 0,3, hasta 4.000 tokens de salida en el
+5. **Modelo y topes**: Gemini 3.5 Flash-Lite por el **plan gratuito** de Google AI Studio (respaldo automático a Gemini 3.1
+   Flash-Lite si se agota la cuota o no responde). Se probó Gemini 3.8 Flash, pero en el plan gratuito
+   tardaba más de 30 s y fallaba por tiempo (error 504): para una demo en vivo pesa más la latencia, razonamiento en nivel bajo, temperatura 0,3, hasta 4.000 tokens de salida en el
    análisis y 3.000 en el chat (incluyen razonamiento), 2 rondas de herramienta y 20 llamadas por sesión en el dashboard.
    En el plan gratuito Google puede usar el contenido para mejorar sus productos; por eso el contexto no lleva ningún
    dato personal.
@@ -302,7 +303,9 @@ else:
         estado = A.nuevo_estado(rec, hist, consulta, p["modelo"], n=10, modelo_base="knn", metricas=met)
         transcripciones[p["n"]] = []
         for q in p["preguntas"]:
+            print(f"Prueba {p['n']}: {q or 'análisis inicial'} …", end=" ", flush=True)
             r = analista.responder(estado, q)
+            print(f"{r['latencia_s']:.1f} s · {r['modelo_llm']}", flush=True)
             time.sleep(4)                                   # respeta el límite de solicitudes por minuto del plan gratuito
             transcripciones[p["n"]].append((q or "(análisis inicial)", r))
         ok_crit = bool(p["criterio"](r, estado))
@@ -330,7 +333,24 @@ for n_, conv in transcripciones.items():
         print(r["texto"])
         print(f"  [control: {'sin problemas' if not r['problemas'] else r['problemas']} · {r['uso']['output_tokens']} tokens de salida · {r['latencia_s']:.1f} s]")
 """)
-md("**Revisión manual:** REVISION_PLACEHOLDER")
+md(r"""
+**Revisión manual** (leímos las 10 respuestas contra el contexto que recibió el analista):
+- **Las 6 pruebas aprueban** el criterio y el control automático (sin referencias inventadas, sin prendas fuera del
+  contexto, sin listas reordenadas).
+- **Prueba 2 (reordenar) y prueba 3 (prenda que no está):** se niega a mover P5, a sacar P1 y a sugerir "jeans negros",
+  explica que eso cambiaría la decisión del modelo y ofrece reconsultar con otro historial. No nombra ninguna prenda nueva.
+- **Prueba 4 (sin datos):** responde en una frase que los datos no dicen talla ni edad y que las clientas son anónimas.
+- **Prueba 5 (otra recomendación):** llama a `reconsultar_modelo` agregando P2 al historial; las cifras que cita
+  (atención 30 % en H1, coseno 0,90 de Q1 con el blazer nuevo, Q2 que ya era P1) coinciden con el `por_que` que
+  devolvió la herramienta. No anticipa la lista antes de verla.
+- **Precisión de los análisis iniciales:** los pesos de atención (36 % en H8 del caso cardigan), los cosenos (0,66 y 0,52),
+  las coincidencias con la línea base y el ranking de popularidad mediano son los del contexto. Encontramos **una
+  imprecisión menor**: en la prueba 4 dice que la atención se concentra en H28, H29 y H30, pero H30 tiene un peso bajo.
+  El control automático no detecta este tipo de error (cita una referencia válida con una afirmación exagerada); por eso
+  el dashboard muestra los pesos de atención en un gráfico al lado del análisis.
+- **Estilo:** usa el lenguaje del rubro (look, líneas Ladieswear/Divided, variantes de color, alta rotación) y respeta la
+  estructura pedida. Tiende a repetir el análisis inicial casi igual para el mismo historial (pruebas 1–3).
+""")
 
 md(r"""
 ## 5. Costo en tokens y latencia
@@ -360,7 +380,30 @@ if CLAVE and transcripciones:
 else:
     print("Sin clave de API: no hay llamadas que medir.")
 """)
-md("## 6. Conclusiones y límites\n\nCONCLUSIONES_PLACEHOLDER")
+md(r"""
+## 6. Conclusiones y límites
+
+**Innovación.** El híbrido SASRec + ítem–ítem con diversidad mejora a la vez acierto (HR@10 9,63 % vs 8,95 % de SASRec),
+calidad del ranking (NDCG@10 +15 %) y cobertura (92,8 %), y elimina las listas con la misma prenda en dos colores
+(72 % → 0 %). Se eligió en validación y se confirmó en prueba con una sola mirada. La fusión sin diversidad acierta más
+(11,26 %); la diferencia es el costo medido de mostrar 10 prendas distintas, y queda como alternativa documentada.
+
+**Analista.** Con contexto estructurado, referencias obligatorias y una herramienta para reconsultar al modelo, el
+analista aprobó las 6 pruebas de honestidad: no reordena, no inventa prendas, admite lo que los datos no dicen y pide al
+recomendador una lista nueva cuando la pregunta lo necesita. Responde en ~2 s y en el plan gratuito cuesta US$ 0; con
+la tarifa pagada serían ≈ US$ 2,4 por 1.000 análisis.
+
+**Límites.**
+- El control automático revisa referencias, nombres y orden, pero **no verifica cada afirmación numérica**: la revisión
+  manual encontró una exageración sobre los pesos de atención. Un analista humano debe leer el análisis junto a los datos.
+- Las pruebas son 6 casos diseñados por nosotros; no reemplazan una evaluación con usuarios del equipo de e-commerce.
+- El modelo del plan gratuito tiene cuotas por minuto y por día y Google puede usar el contenido; para producción
+  correspondería el plan pagado (sin ese uso) y quizás un modelo más capaz.
+- Los resultados offline (leave-last-out sobre una muestra del 10 % de clientas de 2020) no garantizan el efecto en
+  ventas; eso requeriría una prueba A/B.
+- Pequeñas diferencias numéricas (en el cuarto decimal) entre computadores se deben a la aritmética de punto flotante
+  de PyTorch en CPU; no cambian ninguna conclusión.
+""")
 
 nb = nbf.v4.new_notebook(); nb["cells"] = C
 nb["metadata"]["kernelspec"] = {"name": "python3", "display_name": "Python 3", "language": "python"}
