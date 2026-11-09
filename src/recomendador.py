@@ -147,7 +147,9 @@ class Recomendador:
 
     def puntajes_hibrido(self, H, tareas, cfg=None):
         """tareas[i] = 'carrito' si la clienta sigue comprando el mismo día de su última compra, 'visita' si vuelve otro día.
-        Enruta al modelo que mejor resolvió esa tarea en validación y, opcionalmente, suma el otro con peso menor."""
+        Permite enrutar por tarea (modelo principal + el otro con peso_secundario). La configuración elegida en validación
+        (HIBRIDO) usa SASRec en ambas tareas con peso_secundario = 1: es decir, fusión pareja SASRec + ítem–ítem para todas.
+        El enrutamiento por tarea (carrito → ítem–ítem) se probó y se descartó (notebook 2, sección 2)."""
         cfg = cfg or HIBRIDO
         tareas = np.asarray(tareas)
         sc_s, sc_k = self.puntajes_sasrec(H), self.puntajes_knn(H)
