@@ -6,7 +6,7 @@ Machine Learning no supervisado (C2) · UDD
 
 **Usuaria y decisión:** el equipo de e-commerce de una tienda de moda online decide qué 10 prendas mostrarle a una clienta que acaba de comprar, en "Completa tu look" o en el correo de la semana. Un Transformer (SASRec) recomienda a partir de la secuencia de compras, y un analista con IA explica, contrasta y advierte sobre esa lista, sin reordenarla nunca.
 
-**Dashboard:** _(link de Streamlit Community Cloud: se agrega al publicar)_
+**Dashboard:** https://recomendador-hm-transformers-m7dbvcss94tlbt4jnzlgcq.streamlit.app
 
 ## Entrega 2 en 1 minuto
 
